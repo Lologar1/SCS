@@ -2,7 +2,6 @@ package me.analyzers.scs.game;
 
 import me.analyzers.scs.primitiveComponents.*;
 import me.analyzers.scs.utilities.*;
-import org.codehaus.groovy.util.HashCodeHelper;
 
 import javax.swing.Timer;
 import javax.swing.*;
