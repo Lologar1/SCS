@@ -8,8 +8,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static me.analyzers.scs.game.MainPanel.realTileSize;
+import static me.analyzers.scs.game.MainPanel.*;
 import static me.analyzers.scs.utilities.GraphicalUtilities.pinSize;
+import static me.analyzers.scs.utilities.MathUtils.*;
 
 public class Wire implements Placeable {
     private final Set<Rotation> partners;
@@ -20,7 +21,7 @@ public class Wire implements Placeable {
 
     public Wire(int[] snappedPosition, Rotation... first) {
         this.position = snappedPosition;
-        partners = new HashSet<>();
+        partners = new HashSet<>(4);
         partners.addAll(Arrays.asList(first));
     }
 
@@ -99,6 +100,51 @@ public class Wire implements Placeable {
         if (isShowConnected()) {
             //Draw small connection node
             g2d.fillOval(centerX-pinSize/2, centerY-pinSize/2, pinSize, pinSize);
+        }
+    }
+
+    public void autoSnap(Rotation wireLineDirection, Placeable[][] presenceMap, boolean snapToComponents) {
+        //Snap to a newly created wireLine (if it exists) or to components if it's newly created
+
+        if (snapToComponents) {
+            //Getting a unique set of all close by components to snap to
+            Set<ComponentHolder> closeComponents = new HashSet<>();
+            int[] tilePositionFirst = convertToTileNotation(position);
+
+            for (Rotation r : Rotation.values()) {
+                int[] cardinal = toCardinalDirection(r);
+                int i = cardinal[0];
+                int j = cardinal[1];
+                if (tilePositionFirst[0] + i > widthX - 1 || tilePositionFirst[0] + i < 0
+                        || tilePositionFirst[1] + j > widthY - 1 || tilePositionFirst[1] + j < 0) {
+                    //Trying to test componentHolder out of bounds of presenceMap; it's not there.
+                    continue;
+                }
+                if (presenceMap[tilePositionFirst[0] + i][tilePositionFirst[1] + j] instanceof ComponentHolder) {
+                    closeComponents.add((ComponentHolder) presenceMap[tilePositionFirst[0] + i][tilePositionFirst[1] + j]);
+                }
+            }
+
+            //Adding all relevant rotations
+            for (ComponentHolder componentHolder : closeComponents) {
+                Rotation connect = snapToComponentIO(componentHolder, this);
+                if (connect==null) {
+                    //Nothing to snap to.
+                    continue;
+                }
+                //Again, straight lines will get their setShowConnected cleared by cleanWire()
+                setShowConnected(true);
+                partners.add(connect);
+            }
+        } else {
+            if (crossover) {
+                //Rotation already matches, and no need to set show connected.
+                return;
+            }
+            //Add the proper direction to connect it with the rest of the wireLine.
+            //ShowConnected is set for connecting straight wires, but cleaned by cleanWire().
+            setShowConnected(true);
+            partners.add(wireLineDirection);
         }
     }
 

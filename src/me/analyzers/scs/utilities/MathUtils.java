@@ -58,90 +58,27 @@ public class MathUtils {
         Else, null.
          */
 
-        //Define some variables
-        //Component snapped and tile positions
-        int[] componentSnappedPosition = component.getSnappedPosition();
-        int[] tileComponentPosition = new int[]{convertToTileNotation(componentSnappedPosition[0]), convertToTileNotation(componentSnappedPosition[1])};
-
-        //Relative I/O of componentHolder.
-
-        /*
-        Now, relative I/O is a rather tricky thing.
-        They are defined for a north-facing version of the component holder, starting at 0
-        Component I/O is always at the back and from of the componentHolder. A standard XOR gate might have
-        Inputs : int[]{0, 2} -> for first and third tile on the bottom
-        Output : int[]{1} -> for middle tile on top
-         */
-
-        int[] in = component.getRelativeInputs();
-        int[] out = component.getRelativeOutputs();
-        Rotation componentRotation = component.getRotation();
-
         //Wire snapped and tile positions
         int[] wireSnappedPosition = wire.getSnappedPosition();
         int[] tileWirePosition = convertToTileNotation(wireSnappedPosition);
 
-        //Getting difference of X and Y levels
-        int yDiff = Math.abs(tileComponentPosition[1] - tileWirePosition[1]);
-        int xDiff = Math.abs(tileComponentPosition[0] - tileWirePosition[0]);
+        int[][] inputPositions = getTileInputPositions(component);
+        int[][] outputPositions = getTileOutputPositions(component);
 
-        //Wire is right next to possible I/O.
-        //Difference act as the relative offset. This code is a bit ugly and bruteforcey, but I don't see the point in changing that.
-        if (componentRotation == Rotation.NORTH) {
-            if (tileComponentPosition[1] - tileWirePosition[1] < 0) { //Inputs (downside)
-                if (Arrays.stream(in).anyMatch(i -> i == xDiff)) {
-                    return Rotation.NORTH;
-                }
-            } else { //Outputs (upside)
-                if (Arrays.stream(out).anyMatch(i -> i == xDiff)) {
-                    return Rotation.SOUTH;
-                }
-            }
-        } else if (componentRotation == Rotation.EAST) {
-            if (tileComponentPosition[0] - tileWirePosition[0] > 0) { //Inputs (to the left)
-                if (Arrays.stream(in).anyMatch(i -> i == yDiff)) {
-                    return Rotation.EAST;
-                }
-            } else { //Outputs (to the right)
-                if (Arrays.stream(out).anyMatch(i -> i == yDiff)) {
-                    return Rotation.WEST;
-                }
-            }
-        } else if (componentRotation == Rotation.SOUTH) {
-            if (tileComponentPosition[1] - tileWirePosition[1] < 0) { //Outputs (downside)
-                //Magic -1 value: example, reflecting over 0, 1, 2, 3 needs "maxvalue" of 3; so 3-1 = 2 which is a successful reflection.
-                if (Arrays.stream(reflectOverAxis(out, component.getRelativeTileWidth()-1)).anyMatch(i -> i == xDiff)) {
-                    return Rotation.NORTH;
-                }
-            } else { //Inputs (upside)
-                if (Arrays.stream(reflectOverAxis(in, component.getRelativeTileWidth()-1)).anyMatch(i -> i == xDiff)) {
-                    return Rotation.SOUTH;
-                }
-            }
-        } else { //WEST
-            if (tileComponentPosition[0] - tileWirePosition[0] < 0) { //Inputs (to the right)
-                if (Arrays.stream(reflectOverAxis(in, component.getRelativeTileHeight()-1)).anyMatch(i -> i == yDiff)) {
-                    return Rotation.WEST;
-                }
-            } else { //Outputs (to the left)
-                if (Arrays.stream(reflectOverAxis(out, component.getRelativeTileHeight()-1)).anyMatch(i -> i == yDiff)) {
-                    return Rotation.EAST;
-                }
+        for (int[] inputPosition : inputPositions) {
+            if (Arrays.equals(inputPosition, tileWirePosition)) {
+                return component.getRotation();
             }
         }
+
+        for (int[] outputPosition : outputPositions) {
+            if (Arrays.equals(outputPosition, tileWirePosition)) {
+                return complement(component.getRotation());
+            }
+        }
+
+        //Did not match
         return null;
-    }
-
-    public static int[] reflectOverAxis(int[] toReflect, int maxValue) {
-        //Reflects an integer array according to a certain axis. Used for SOUTH and WEST I/O reflections (for asymmetrical components)
-        //Takes into account the zero !
-        int[] result = new int[toReflect.length];
-
-        for (int i = 0; i < toReflect.length; i++) {
-            result[i] = maxValue - toReflect[i];
-        }
-
-        return result;
     }
 
     public static int[] getDirectionalLocation(int[] position, Rotation direction, int unit) {
@@ -303,7 +240,8 @@ public class MathUtils {
         for (int i = x; i < x+component.getRelativeTileWidth(); i++) {
             for (int j = y; j < y+component.getRelativeTileHeight(); j++) {
                 if (presence[i][j] != null) { //Trying to place somewhere that's already there ?!
-                    throw new RuntimeException("Illegal placeable component placement !");
+                    System.err.println("Illegal placeable component placement at [" + i + ", " + j + "]");
+                    continue;
                 }
                 presence[i][j] = component; //Putting a reference
             }
@@ -316,10 +254,10 @@ public class MathUtils {
         for (int i = x; i < x+component.getRelativeTileWidth(); i++) {
             for (int j = y; j < y+component.getRelativeTileHeight(); j++) {
                 if (presence[i][j] == null) { //Trying to remove somewhere that's already there ?!
-                    throw new RuntimeException("Illegal placeable component removal !");
+                    System.err.println("Illegal placeable component removal at [" + i + ", " + j + "]");
+                    continue;
                 }
-                //Null always represents air in presence.
-                presence[i][j] = null;
+                presence[i][j] = null; //Null represents air.
             }
         }
     }

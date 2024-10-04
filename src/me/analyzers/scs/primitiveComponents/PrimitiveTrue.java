@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 
 public class PrimitiveTrue extends ComponentHolder implements PrimitiveComponent {
     public PrimitiveTrue(int[] position, int wireSize, Rotation startingRotation) {
-        super("True " + wireSize, position, 1, 1, wireSize, new int[]{0}, new int[]{0}, startingRotation, null);
+        super("True " + wireSize, position, 1, 1, wireSize, new int[]{}, new int[]{0}, startingRotation, null);
     }
 
     @Override

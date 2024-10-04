@@ -106,7 +106,8 @@ public class AbstractComponentMap {
                 boolean[] componentOutput = componentOutputs[i];
 
                 if (componentConnections[i] == null || componentConnections[i].length == 0) {
-                    System.err.println(toUpdate.getName() + " at " + Arrays.toString(convertToTileNotation(toUpdate.getSnappedPosition())) + " has null or empty connection for output " + i);
+                    System.err.println(toUpdate.getName() + " at " + Arrays.toString(convertToTileNotation(toUpdate.getSnappedPosition()))
+                            + " has null or empty connection for output " + i + ". This was probably caused by a wire pointing into a component, but not to an input/output.");
                     continue;
                 }
 
@@ -292,7 +293,7 @@ public class AbstractComponentMap {
                 tally.add(new ComponentConnection(connectedComponent, wireLine, inputIndex, true));
             } else {
                 System.err.println("Failed to get an input position match following wireLine on ACM creation. " +
-                        "This was probably caused by an illegal doubly-written-to wire, or a non-connecting wire pointing to a component.");
+                        "This was probably caused by an illegal doubly-written-to wire, or a wire pointing into a component, but not to an input/output.");
             }
         }
         return tally;

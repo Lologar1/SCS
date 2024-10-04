@@ -17,8 +17,6 @@ public class PositionLineIterator implements Iterator {
     private int minY;
     private int minX;
     private boolean valid = true;
-    private final int[] adjustedFirst;
-    private final int[] adjustedLast;
 
     public PositionLineIterator(int[] positionFirst, int[] positionLast) {
         int posFA = convertToSnappedNotation(positionFirst[0]);
@@ -29,10 +27,6 @@ public class PositionLineIterator implements Iterator {
         if (!(posFA == posLA || posFB == posLB)) {
             valid = false; //Not a straight line, as !(x is on same line as other x | y is on same as other y)
         }
-
-        //Get snapped ends of the line
-        this.adjustedFirst = new int[]{posFA, posFB};
-        this.adjustedLast = new int[]{posLA, posLB};
 
         //Self-explanatory
         this.length = 1 + Math.abs((posFA/realTileSize - posLA/realTileSize) + (posFB/realTileSize - posLB/realTileSize));
@@ -52,14 +46,6 @@ public class PositionLineIterator implements Iterator {
             this.minY = posLB;
             this.direction = Rotation.NORTH;
         }
-    }
-
-    public int[] getSnappedPositionFirst() {
-        return adjustedFirst;
-    }
-
-    public int[] getSnappedPositionLast() {
-        return adjustedLast;
     }
 
     public boolean isValid() {

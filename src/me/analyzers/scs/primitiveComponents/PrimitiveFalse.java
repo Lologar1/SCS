@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 
 public class PrimitiveFalse extends ComponentHolder implements PrimitiveComponent{
     public PrimitiveFalse(int[] position, int wireSize, Rotation startingRotation) {
-        super("False " + wireSize, position, 1, 1, wireSize, new int[]{0}, new int[]{0}, startingRotation, null);
+        super("False " + wireSize, position, 1, 1, wireSize, new int[]{}, new int[]{0}, startingRotation, null);
     }
 
     @Override

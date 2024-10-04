@@ -136,12 +136,11 @@ public class MainPanel extends JPanel implements ActionListener{
         //Last click position handling IMPORTANT: getting the click is really just the last time the mouse was pressed down
         //To get current mouse position, refer to MouseClickHandler.getHoveringPosition()
         int[] realPressLocation = new int[]{mouseClickHandler.getLastClickX(), mouseClickHandler.getLastClickY()};
-        int[] snappedLocation = new int[]{convertToSnappedNotation(realPressLocation[0]),
-                convertToSnappedNotation(realPressLocation[1])};
+        int[] snappedLocation = convertToSnappedNotation(realPressLocation);
         int tileX = snappedLocation[0]/realTileSize;
         int tileY = snappedLocation[1]/realTileSize;
 
-        if (mouseClickHandler.isNew()) { //isNew is only true on a new mouse click.
+        if (mouseClickHandler.isNew()) { //isNew is only true on a new mouse click, or ongoing drag (as we avoid setting it to false, instead letting it fall through)
             int clickType = mouseClickHandler.getType(); //RIGHT, LEFT, or MIDDLE click mostly.
 
             //A middle or left click might be in the middle of making a wireLine, and a right click might be in the middle of deleting one.
@@ -180,8 +179,8 @@ public class MainPanel extends JPanel implements ActionListener{
                 }
 
                 //Test if both ends exist
-                boolean existsFirst = presenceMap[convertToTileNotation(positionFirst[0])][convertToTileNotation(positionFirst[1])] != null;
-                boolean existsLast = presenceMap[convertToTileNotation(positionLast[0])][convertToTileNotation(positionLast[1])] != null;
+                boolean existsFirst = presenceMap[convertToTileNotation(positionFirst[0])][convertToTileNotation(positionFirst[1])] instanceof Wire;
+                boolean existsLast = presenceMap[convertToTileNotation(positionLast[0])][convertToTileNotation(positionLast[1])] instanceof Wire;
 
                 //The actual wireLine
                 LinkedList<Wire> toAdd = new LinkedList<>();
@@ -211,7 +210,6 @@ public class MainPanel extends JPanel implements ActionListener{
                         //Is a complete 2-way wire which does not bend (isMutualComplement)
                         //Is not in the same direction as the wireLine being made (noneMatch rotation partners)
 
-                        //TODO : autosnap to stub wires
                         if (potentialPartner instanceof Wire && isMutualComplement(((Wire) potentialPartner).getPartners())
                             && ((Wire) potentialPartner).getPartners().stream().noneMatch(r -> justPut.getPartners().contains(r))) {
 
@@ -219,8 +217,12 @@ public class MainPanel extends JPanel implements ActionListener{
                             ((Wire) potentialPartner).setShowConnected(false);
                             ((Wire) potentialPartner).getPartners().addAll(Arrays.stream(Rotation.values()).toList());
                             //Set the crossover to be: a crossover, don't show connected (little dot), and has all partners.
+                        } else if (potentialPartner instanceof Wire && ((Wire) potentialPartner).getPartners().stream().noneMatch(justPut.getPartners()::contains)) {
+                            //If wire is a stub (not mutual complement, but still doesn't contain any of the same rotations), then connect it.
+                            ((Wire) potentialPartner).setShowConnected(true);
+                            ((Wire) potentialPartner).getPartners().addAll(justPut.getPartners());
                         } else {
-                            //A componentHolder, or a wireLine ending. Don't crossover then; abort.
+                            //A componentHolder; abort
                             return;
                         }
                     } else {
@@ -229,102 +231,28 @@ public class MainPanel extends JPanel implements ActionListener{
                     }
                 }
 
-                int[] snappedPositionFirst = positionLineIterator.getSnappedPositionFirst();
                 if (existsFirst) {
-                    //Check for adjusting for the first end.
-                    Placeable wireToAdjust = presenceMap[convertToTileNotation(snappedPositionFirst[0])]
-                            [convertToTileNotation(snappedPositionFirst[1])];
-                    if (wireToAdjust instanceof Wire && !((Wire) wireToAdjust).isCrossover()) {
-                        //There is a wire at posFirst, and it's not a crossover.
-                        //Crossovers handle themselves, as their natural rotations will match with this wireLine.
-                        //Simply add the proper direction to connect it with the rest of the wireLine.
-                        ((Wire) wireToAdjust).setShowConnected(true);
-                        ((Wire) wireToAdjust).getPartners().add(direction);
-                    }
-                } else {
-                    //Check for snapping to component I/O
-                    //Getting a unique set of all close by components to snap to
-                    Set<ComponentHolder> closeComponents = new HashSet<>();
-                    int[] tilePositionFirst = new int[]{convertToTileNotation(snappedPositionFirst[0]),
-                            convertToTileNotation(snappedPositionFirst[1])};
-
-                    for (Rotation r : Rotation.values()) {
-                        int[] cardinal = toCardinalDirection(r);
-                        int i = cardinal[0];
-                        int j = cardinal[1];
-                        if (tilePositionFirst[0]+i > widthX-1 || tilePositionFirst[0]+i < 0
-                                || tilePositionFirst[1]+j > widthY-1 || tilePositionFirst[1]+j < 0) {
-                            //Trying to test componentHolder out of bounds of presenceMap; it's not there.
-                            continue;
-                        }
-                        if (presenceMap[tilePositionFirst[0]+i][tilePositionFirst[1]+j] instanceof ComponentHolder) {
-                            closeComponents.add((ComponentHolder) presenceMap[tilePositionFirst[0]+i][tilePositionFirst[1]+j]);
-                        }
-
-                    }
-                    boolean didSnapToComponent = false;
-                    for (ComponentHolder componentHolder : closeComponents) {
-                        //Since there is nothing, create the wire as a stub.
-                        Wire firstPositionWire = new Wire(snappedPositionFirst, direction);
-                        Rotation connect = snapToComponentIO(componentHolder, firstPositionWire);
-                        if (connect==null) {
-                            //Nothing to snap to.
-                            continue;
-                        }
-                        //Don't add the fallback stub wire at the end
-                        didSnapToComponent = true;
-                        firstPositionWire.getPartners().add(connect);
-                        toAdd.add(firstPositionWire);
-                    }
-                    if (!didSnapToComponent) {
-                        //Add a fallback stub wire, since it did not connect to any components.
-                        toAdd.add(new Wire(snappedPositionFirst, direction));
-                    }
+                    //Wire already exists, so we autosnap it.
+                    Wire wireToAdjust = (Wire) presenceMap[convertToTileNotation(positionFirst[0])]
+                            [convertToTileNotation(positionFirst[1])];
+                    wireToAdjust.autoSnap(direction, presenceMap, false);
+                } else if (presenceMap[tileX][tileY] == null){
+                    //Create a stub wire and autosnap it, if there is nothing there
+                    Wire newWire = new Wire(convertToSnappedNotation(positionFirst), direction);
+                    newWire.autoSnap(direction, presenceMap, true);
+                    toAdd.add(newWire);
                 }
 
-                int[] snappedPositionLast = positionLineIterator.getSnappedPositionLast();
+                //Same as above, but for last
                 if (existsLast) {
-                    //Check for adjusting for the last end.
-                    Placeable wireToAdjust = presenceMap[convertToTileNotation(snappedPositionLast[0])]
-                            [convertToTileNotation(snappedPositionLast[1])];
-                    if (wireToAdjust instanceof Wire && !((Wire) wireToAdjust).isCrossover()) {
-                        ((Wire) wireToAdjust).setShowConnected(true);
-                        //Since it is last, add the complement instead !
-                        ((Wire) wireToAdjust).getPartners().add(complement(direction));
-                    }
-                } else {
-                    Set<ComponentHolder> closeComponents = new HashSet<>();
-                    int[] tilePositionLast = new int[]{convertToTileNotation(snappedPositionLast[0]),
-                            convertToTileNotation(snappedPositionLast[1])};
-                    for (Rotation r : Rotation.values()) {
-                        int[] cardinal = toCardinalDirection(r);
-                        int i = cardinal[0];
-                        int j = cardinal[1];
-                        if (tilePositionLast[0]+i > widthX-1 || tilePositionLast[0]+i < 0
-                                || tilePositionLast[1]+j > widthY-1 || tilePositionLast[1]+j < 0) {
-                            continue;
-                        }
-                        if (presenceMap[tilePositionLast[0]+i][tilePositionLast[1]+j] instanceof ComponentHolder) {
-                            closeComponents.add((ComponentHolder) presenceMap[tilePositionLast[0]+i][tilePositionLast[1]+j]);
-                        }
-                    }
-                    boolean didSnapToComponent = false;
-                    for (ComponentHolder componentHolder : closeComponents) {
-                        Wire lastPositionWire = new Wire(snappedPositionLast, complement(direction));
-                        Rotation connect = snapToComponentIO(componentHolder, lastPositionWire);
-                        if (connect==null) {
-                            //Nothing to snap to.
-                            continue;
-                        }
-                        //Don't add the fallback stub wire at the end
-                        didSnapToComponent = true;
-                        lastPositionWire.getPartners().add(connect);
-                        toAdd.add(lastPositionWire);
-                    }
-                    if (!didSnapToComponent) {
-                        //Add a fallback stub wire, since it did not connect to any components.
-                        toAdd.add(new Wire(snappedPositionLast, complement(direction)));
-                    }
+                    Wire wireToAdjust = (Wire) presenceMap[convertToTileNotation(positionLast[0])]
+                            [convertToTileNotation(positionLast[1])];
+                    wireToAdjust.autoSnap(complement(direction), presenceMap, false);
+                } else if (presenceMap[convertToTileNotation(positionLast[0])]
+                        [convertToTileNotation(positionLast[1])] == null){
+                    Wire newWire = new Wire(convertToSnappedNotation(positionLast), complement(direction));
+                    newWire.autoSnap(complement(direction),presenceMap, true);
+                    toAdd.add(newWire);
                 }
 
                 if (existsLast || existsFirst) {
@@ -334,17 +262,13 @@ public class MainPanel extends JPanel implements ActionListener{
 
                 for (Wire wire : toAdd) {
                     //Reaching this point, we commit to changing the board state with our new wireLine.
-                    int[] position = wire.getSnappedPosition();
-                    presenceMap[convertToTileNotation(position[0])][convertToTileNotation(wire.getSnappedPosition()[1])] = wire;
+                    pushToPresence(presenceMap, wire);
                 }
                 //Adding our wires to the wireQueue
                 wireQueue.addAll(toAdd);
 
                 //Cull and maintain wires.
                 wireQueue.forEach(this::cleanupWire);
-
-                //TODO: Legacy and pending discontinuation method. (Low priority)
-                mergeWires(); //An o(n^2) algorithm (could be made faster) Only call when creating wires.
                 return;
             }
 
@@ -373,8 +297,8 @@ public class MainPanel extends JPanel implements ActionListener{
                         wireQueue.remove((Wire) toRemove);
                     }
                 } else if (!mouseClickHandler.isDragging()) {
-                    //This means swathe-deleting only works when finishing on an empty tile.
-                    //TODO: perhaps add some test that discriminates between normal-deleting a wire and when you just finished dragging ?
+                    //This means swathe-deleting only works when beginning on an empty tile.
+                    //TODO: perhaps add some test that discriminates between normal-deleting a wire and when you start dragging ?
                     mouseClickHandler.setNew(false);
 
                     //Setting up tools for iterating through the line
@@ -670,36 +594,5 @@ public class MainPanel extends JPanel implements ActionListener{
                 (rotationList.size() == 2 && isPolar(rotationList.get(0)) == isPolar(rotationList.get(1))))) {
             wire.setShowConnected(false);
         }
-    }
-
-    public void mergeWires() {
-        /*
-        An O(n^2) algorithm, for crunching stacked wires into one.
-        This algorithm is a legacy code remnant and should never, EVER be needed.
-        Pending discontinuation once I can prove no wire ever gets stacked. For now though best to keep it !
-         */
-        ArrayList<Wire> toRemove = new ArrayList<>();
-        for (Wire wire : wireQueue) {
-            if (wire.isCrossover()) {
-                continue;
-            }
-            List<Rotation> rotationList = wire.getPartners().stream().toList();
-            if (toRemove.contains(wire)) {
-                continue;
-            }
-            if (rotationList.size() > 2 || (rotationList.size() == 2 &&
-                    !(isPolar(rotationList.get(0))==isPolar(rotationList.get(1))))) { wire.setShowConnected(true); }
-            Set<Wire> without = new HashSet<>(wireQueue);
-            without.remove(wire);
-            for (Wire partner : without) {
-                if (partner.getSnappedPosition() == wire.getSnappedPosition()){
-                    wire.getPartners().addAll(partner.getPartners());
-                    toRemove.add(partner);
-                }
-            }
-            //Merging into 1 on the presencemap
-            presenceMap[convertToTileNotation(wire.getSnappedPosition()[0])][convertToTileNotation(wire.getSnappedPosition()[1])] = wire;
-        }
-        wireQueue.removeAll(toRemove);
     }
 }

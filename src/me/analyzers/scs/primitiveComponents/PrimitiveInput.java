@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
 public class PrimitiveInput extends ComponentHolder implements PrimitiveComponent, PrimitiveIO, Interactable {
     private boolean value;
     public PrimitiveInput(int[] position, int wireSize, Rotation startingRotation) {
-        super("In " + wireSize, position, 1, 1, wireSize, new int[]{0}, new int[]{0}, startingRotation, null);
+        super("In " + wireSize, position, 1, 1, wireSize, new int[]{}, new int[]{0}, startingRotation, null);
         value = false;
     }
 
