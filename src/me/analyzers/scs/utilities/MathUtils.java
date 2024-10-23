@@ -7,6 +7,12 @@ import java.util.*;
 import static me.analyzers.scs.game.MainPanel.*;
 
 public class MathUtils {
+
+    public static boolean isInsideRectangle(int[] testPosition, int[] rectTopLeftPosition, int width, int height) {
+        return testPosition[0] >= rectTopLeftPosition[0] && testPosition[0] <= rectTopLeftPosition[0] + width
+                && testPosition[1] >= rectTopLeftPosition[1] && testPosition[1] <= rectTopLeftPosition[1] + height;
+    }
+
     public static int[] getCombinatorIO(int size) {
         int[] inputs = new int[size];
         for (int i = 0; i < size; i++) {inputs[i] = i;}
@@ -292,4 +298,44 @@ public class MathUtils {
         }
         return false;
     }
+
+    public static int[][] parseCombinatorSpecifications(String raw) {
+        String specs = raw.replaceAll("\\s+", ""); //Replace all whitespaces
+        int[][] formatted = new int[specs.length() - specs.replace("_", "").length() + 1][2];
+
+        //Will throw exceptions for bad input strings.
+        int index = 0;
+        for (String substring : specs.split("_")) {
+            int firstPart;
+            int secondPart;
+
+            if (!substring.contains("-")) {
+                firstPart = Integer.parseInt(substring);
+                secondPart = firstPart;
+            } else {
+                firstPart = Integer.parseInt(substring.split("-")[0]);
+                secondPart = Integer.parseInt(substring.split("-")[1]);
+            }
+
+            formatted[index] = new int[]{firstPart, secondPart};
+            index++;
+        }
+
+        return formatted;
+    }
+
+    public static String getSpecificationAsString(int[][] specs) {
+        StringBuilder mergerIntervals = new StringBuilder();
+        for (int[] interval : specs) {
+            if (interval[0] == interval[1]) {
+                mergerIntervals.append(interval[0]).append(" ");
+            } else {
+                mergerIntervals.append(interval[0]).append("-").append(interval[1]).append(" ");
+            }
+        }
+        mergerIntervals.setLength(mergerIntervals.length() - 1); //Remove last 2 chars
+
+        return mergerIntervals.toString();
+    }
+
 }

@@ -3,6 +3,7 @@ package me.analyzers.scs;
 import me.analyzers.scs.game.MainWindow;
 
 import javax.swing.*;
+import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) {

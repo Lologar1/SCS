@@ -1,20 +1,20 @@
 package me.analyzers.scs.primitiveComponents;
 
 import me.analyzers.scs.game.ComponentHolder;
-import me.analyzers.scs.game.Interactable;
+import me.analyzers.scs.game.MainPanel;
+import me.analyzers.scs.utilities.Interactable;
 import me.analyzers.scs.utilities.Rotation;
-import me.analyzers.scs.utilities.Tuple;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.Arrays;
 
 public class PrimitiveInput extends ComponentHolder implements PrimitiveComponent, PrimitiveIO, Interactable {
     private boolean value;
-    public PrimitiveInput(int[] position, int wireSize, Rotation startingRotation) {
-        super("In " + wireSize, position, 1, 1, wireSize, new int[]{}, new int[]{0}, startingRotation, null);
+    private final int wireSize;
+
+    public PrimitiveInput(int[] position, Rotation startingRotation) {
+        super("In " + MainPanel.baseWireSize, position, 1, 1, new int[]{}, new int[]{0}, startingRotation, null);
         value = false;
+        wireSize = MainPanel.baseWireSize;
     }
 
     public void toggle() {
@@ -27,11 +27,9 @@ public class PrimitiveInput extends ComponentHolder implements PrimitiveComponen
 
     @Override
     public boolean[][] evaluate(boolean[]... inputs) {
-        boolean[] result = new boolean[getWireSize()];
+        boolean[] result = new boolean[wireSize];
 
-        for (int i = 0; i < getWireSize(); i++) {
-            result[i] = value;
-        }
+        Arrays.fill(result, value);
 
         return new boolean[][]{result};
     }

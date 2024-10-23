@@ -1,27 +1,26 @@
 package me.analyzers.scs.primitiveComponents;
 
 import me.analyzers.scs.game.ComponentHolder;
-import me.analyzers.scs.utilities.IncompleteInputsException;
+import me.analyzers.scs.utilities.IllegalInputsException;
 import me.analyzers.scs.utilities.Rotation;
-import me.analyzers.scs.utilities.Tuple;
-import me.analyzers.scs.utilities.UnmatchingWiresException;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class PrimitiveNOT extends ComponentHolder implements PrimitiveComponent {
-    public PrimitiveNOT(int[] position, int wireSize, Rotation startingRotation) {
-        super("NOT " + wireSize, position, 1, 1, wireSize, new int[]{0}, new int[]{0}, startingRotation, null);
+    public PrimitiveNOT(int[] position, Rotation startingRotation) {
+        super("NOT", position, 1, 1, new int[]{0}, new int[]{0}, startingRotation, null);
 
     }
 
     @Override
     public boolean[][] evaluate(boolean[]... inputs) {
-        if (inputs.length < 1) {
-            throw new IncompleteInputsException();
+        if (inputs.length != 1) {
+            throw new IllegalInputsException();
         }
 
         boolean[] a = inputs[0];
+
+        if (a.length == 0) {
+            return new boolean[1][0]; //Empty array: floating output.
+        }
 
         boolean[] result = new boolean[a.length];
 

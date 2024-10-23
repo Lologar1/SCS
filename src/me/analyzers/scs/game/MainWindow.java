@@ -3,6 +3,9 @@ package me.analyzers.scs.game;
 import me.analyzers.scs.game.MainPanel;
 
 import javax.swing.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
 
 public class MainWindow {
     private final JFrame window;
@@ -11,10 +14,11 @@ public class MainWindow {
         //Setting misc. window-related stuff
         window = new JFrame();
         window.setIconImage(new ImageIcon("chip.png").getImage());
-        window.setTitle("SCS V0.2");
+        window.setTitle("SCS V0.3");
         window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         window.setSize(800, 500);
         window.setLocationRelativeTo(null);
+        window.setResizable(false);
     }
 
     public void show() {

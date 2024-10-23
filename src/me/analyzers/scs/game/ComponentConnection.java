@@ -2,13 +2,14 @@ package me.analyzers.scs.game;
 
 import me.analyzers.scs.utilities.Activation;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class ComponentConnection {
+public class ComponentConnection implements Serializable {
     private final ComponentHolder component;
     private final ArrayList<Wire> wireLine;
     private final int inPort;
-    private final boolean isTopLevel;
+    private boolean isTopLevel;
 
     public ComponentConnection(ComponentHolder component, ArrayList<Wire> wireLine, int inPort, boolean isTopLevel) {
         this.component = component;
@@ -33,7 +34,14 @@ public class ComponentConnection {
         return component;
     }
 
+    public void setTopLevel(boolean topLevel) {
+        isTopLevel = topLevel;
+    }
+
     public void setState(Activation state) {
+        if (!isTopLevel) {
+            return;
+        }
         wireLine.forEach(w -> w.setState(state));
     }
 }

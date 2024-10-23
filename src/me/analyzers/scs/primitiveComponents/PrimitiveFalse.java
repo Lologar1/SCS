@@ -1,28 +1,23 @@
 package me.analyzers.scs.primitiveComponents;
 
+import me.analyzers.scs.Main;
 import me.analyzers.scs.game.ComponentHolder;
-import me.analyzers.scs.utilities.IncompleteInputsException;
+import me.analyzers.scs.game.MainPanel;
+import me.analyzers.scs.panels.BuildingMenu;
 import me.analyzers.scs.utilities.Rotation;
-import me.analyzers.scs.utilities.Tuple;
-import me.analyzers.scs.utilities.UnmatchingWiresException;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.IntStream;
 
 public class PrimitiveFalse extends ComponentHolder implements PrimitiveComponent{
-    public PrimitiveFalse(int[] position, int wireSize, Rotation startingRotation) {
-        super("False " + wireSize, position, 1, 1, wireSize, new int[]{}, new int[]{0}, startingRotation, null);
+    private final int wireSize;
+
+    public PrimitiveFalse(int[] position, Rotation startingRotation) {
+        super("False " + MainPanel.baseWireSize, position, 1, 1, new int[]{}, new int[]{0}, startingRotation, null);
+        wireSize = MainPanel.baseWireSize;
     }
 
     @Override
     public boolean[][] evaluate(boolean[]... inputs) {
-        boolean[] result = new boolean[getWireSize()];
+        boolean[] result = new boolean[wireSize];
 
-        for (int i = 0; i < getWireSize(); i++) {
-            result [i] = false;
-        }
-
-        return new boolean[][]{result};
+        return new boolean[][]{result}; //Array of bool initialized to false by default
     }
 }

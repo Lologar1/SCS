@@ -1,6 +1,7 @@
 package me.analyzers.scs.game;
 
 import me.analyzers.scs.utilities.Activation;
+import me.analyzers.scs.utilities.Placeable;
 import me.analyzers.scs.utilities.Rotation;
 
 import java.awt.*;
@@ -9,7 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static me.analyzers.scs.game.MainPanel.*;
-import static me.analyzers.scs.utilities.GraphicalUtilities.pinSize;
+import static me.analyzers.scs.game.MainPanel.pinSize;
 import static me.analyzers.scs.utilities.MathUtils.*;
 
 public class Wire implements Placeable {
@@ -79,6 +80,7 @@ public class Wire implements Placeable {
             case OFF -> g2d.setColor(Color.GRAY);
             case ON -> g2d.setColor(Color.GREEN);
             case ERROR -> g2d.setColor(Color.RED);
+            case FLOATING -> g2d.setColor(Color.ORANGE);
         }
 
         //Draw every branch for wires.
@@ -160,4 +162,8 @@ public class Wire implements Placeable {
         return showConnected;
     }
 
+    @Override
+    public Wire clone() throws CloneNotSupportedException {
+        return (Wire) super.clone();
+    }
 }
